@@ -148,3 +148,14 @@ vite.config.ts.timestamp-*
 .env.development.local
 .env.test.local
 .env.production.local
+# Vite and editor files
+node_modules/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
