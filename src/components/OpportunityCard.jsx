@@ -1,4 +1,3 @@
-// import React from "react";
 import "./OpportunityCard.module.css";
 
 const OpportunityCard = ({ opportunity, onViewDetails, onShortlist }) => {
