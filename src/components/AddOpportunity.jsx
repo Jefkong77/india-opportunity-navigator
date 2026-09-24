@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "../apiConfig";
-import "./OpportunityList.module.css";
+import "./OpportunityList.css";
 
 const AddOpportunity = () => {
   const navigate = useNavigate();

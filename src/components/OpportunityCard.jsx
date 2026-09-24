@@ -1,4 +1,4 @@
-import "./OpportunityCard.module.css";
+import "./OpportunityCard.css";
 
 const OpportunityCard = ({ opportunity, onViewDetails, onShortlist }) => {
   const { title, state, sector, type, summary } = opportunity;

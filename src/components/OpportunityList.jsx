@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import OpportunityCard from "./OpportunityCard";
 import { API_ENDPOINTS } from "../apiConfig";
-import "./OpportunityList.module.css";
+import "./OpportunityList.css";
 
 const OpportunityList = ({ viewMode }) => {
   const { id } = useParams(); // Extract the dynamic ID parameter from the URL string
