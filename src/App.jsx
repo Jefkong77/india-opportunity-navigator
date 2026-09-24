@@ -1,4 +1,12 @@
 import { useState } from 'react'
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
 import './App.css'
 
 const opportunities = [
@@ -7,35 +15,78 @@ const opportunities = [
     title: 'Semiconductor Manufacturing Incentive',
     state: 'Gujarat',
     sector: 'Semiconductors',
+    opportunityType: 'Investment',
     summary:
       'Placeholder opportunity for companies exploring manufacturing and supply-chain partnerships.',
-    support: 'Capital support, infrastructure access and state facilitation.',
+    description:
+      'A fictional demonstration opportunity for establishing semiconductor manufacturing capacity in Gujarat.',
+    whyItMatters:
+      'It illustrates how the navigator can connect a sector opportunity with a specific Indian state.',
+    recommendedAction:
+      'Review the supporting evidence and contact the relevant state agency to confirm current eligibility.',
+    sourceName: 'Demonstration source',
+    sourceUrl: 'https://example.com',
+    isUserCreated: false,
   },
   {
     id: 2,
     title: 'Life Sciences Expansion Programme',
     state: 'Telangana',
     sector: 'Biotechnology',
+    opportunityType: 'Partnership',
     summary:
       'Placeholder opportunity for biotechnology, pharmaceutical and research companies.',
-    support: 'Research ecosystem, industrial parks and investor support.',
+    description:
+      'A fictional demonstration opportunity for research and commercial partnerships in Telangana.',
+    whyItMatters:
+      'It shows how sector strengths can be presented with a clear partnership pathway.',
+    recommendedAction:
+      'Assess potential partners and verify the programme details with the named source.',
+    sourceName: 'Demonstration source',
+    sourceUrl: 'https://example.com',
+    isUserCreated: false,
   },
   {
     id: 3,
     title: 'Digital Infrastructure Investment',
-    state: 'Uttar Pradesh',
+    state: 'Maharashtra',
     sector: 'Infrastructure',
+    opportunityType: 'Market Entry',
     summary:
       'Placeholder opportunity for data centres and digital infrastructure providers.',
-    support: 'Land facilitation, connectivity and investment incentives.',
+    description:
+      'A fictional demonstration opportunity for entering Maharashtra’s digital infrastructure market.',
+    whyItMatters:
+      'It demonstrates how market-entry opportunities can be compared alongside investment and partnership options.',
+    recommendedAction:
+      'Validate demand, location requirements and applicable incentives before proceeding.',
+    sourceName: 'Demonstration source',
+    sourceUrl: 'https://example.com',
+    isUserCreated: false,
   },
 ]
 
-function Navigation({ activePage, shortlistCount, onNavigate }) {
+function Navigation({ shortlistCount }) {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const activePage =
+    pathname === '/opportunities/new'
+      ? 'add'
+      : pathname === '/shortlist'
+        ? 'shortlist'
+        : pathname === '/opportunities' ||
+            pathname.startsWith('/opportunities/')
+          ? 'list'
+          : null
+
   const navigationItems = [
-    { id: 'list', label: 'Opportunities' },
-    { id: 'add', label: 'Add Opportunity' },
-    { id: 'shortlist', label: `Shortlist (${shortlistCount})` },
+    { id: 'list', label: 'Opportunities', path: '/opportunities' },
+    { id: 'add', label: 'Add Opportunity', path: '/opportunities/new' },
+    {
+      id: 'shortlist',
+      label: `Shortlist (${shortlistCount})`,
+      path: '/shortlist',
+    },
   ]
 
   return (
@@ -56,7 +107,7 @@ function Navigation({ activePage, shortlistCount, onNavigate }) {
                 ? 'nav-button active'
                 : 'nav-button'
             }
-            onClick={() => onNavigate(item.id)}
+            onClick={() => navigate(item.path)}
           >
             {item.label}
           </button>
@@ -74,8 +125,10 @@ function FilterPanel() {
         <select defaultValue="">
           <option value="">All states</option>
           <option>Gujarat</option>
+          <option>Karnataka</option>
+          <option>Maharashtra</option>
+          <option>Tamil Nadu</option>
           <option>Telangana</option>
-          <option>Uttar Pradesh</option>
         </select>
       </label>
 
@@ -84,6 +137,7 @@ function FilterPanel() {
         <select defaultValue="">
           <option value="">All sectors</option>
           <option>Semiconductors</option>
+          <option>Electronics</option>
           <option>Biotechnology</option>
           <option>Infrastructure</option>
         </select>
@@ -107,6 +161,7 @@ function OpportunityCard({
       <div className="card-tags">
         <span>{opportunity.state}</span>
         <span>{opportunity.sector}</span>
+        <span>{opportunity.opportunityType}</span>
       </div>
 
       <h3>{opportunity.title}</h3>
@@ -180,6 +235,7 @@ function OpportunityDetails({
         <div className="card-tags">
           <span>{opportunity.state}</span>
           <span>{opportunity.sector}</span>
+          <span>{opportunity.opportunityType}</span>
         </div>
 
         <h3>{opportunity.title}</h3>
@@ -187,11 +243,25 @@ function OpportunityDetails({
         <h4>Opportunity summary</h4>
         <p>{opportunity.summary}</p>
 
-        <h4>Indicative support</h4>
-        <p>{opportunity.support}</p>
+        <h4>Description</h4>
+        <p>{opportunity.description}</p>
 
-        <h4>Next step</h4>
-        <p>Contact the relevant state agency for eligibility verification.</p>
+        <h4>Why it matters</h4>
+        <p>{opportunity.whyItMatters}</p>
+
+        <h4>Recommended action</h4>
+        <p>{opportunity.recommendedAction}</p>
+
+        <h4>Evidence</h4>
+        <p>
+          <a
+            href={opportunity.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {opportunity.sourceName}
+          </a>
+        </p>
 
         <button
           type="button"
@@ -201,6 +271,27 @@ function OpportunityDetails({
         </button>
       </article>
     </section>
+  )
+}
+
+function OpportunityDetailsRoute({ shortlist, onToggleShortlist }) {
+  const navigate = useNavigate()
+  const { opportunityId } = useParams()
+  const opportunity = opportunities.find(
+    (item) => String(item.id) === opportunityId,
+  )
+
+  if (!opportunity) {
+    return <NotFound />
+  }
+
+  return (
+    <OpportunityDetails
+      opportunity={opportunity}
+      isShortlisted={shortlist.includes(opportunity.id)}
+      onBack={() => navigate('/opportunities')}
+      onToggleShortlist={onToggleShortlist}
+    />
   )
 }
 
@@ -231,8 +322,10 @@ function AddOpportunityForm({ onDone }) {
               Select a state
             </option>
             <option>Gujarat</option>
+            <option>Karnataka</option>
+            <option>Maharashtra</option>
+            <option>Tamil Nadu</option>
             <option>Telangana</option>
-            <option>Uttar Pradesh</option>
           </select>
         </label>
 
@@ -243,8 +336,22 @@ function AddOpportunityForm({ onDone }) {
               Select a sector
             </option>
             <option>Semiconductors</option>
+            <option>Electronics</option>
             <option>Biotechnology</option>
             <option>Infrastructure</option>
+          </select>
+        </label>
+
+        <label>
+          Opportunity type
+          <select required defaultValue="">
+            <option value="" disabled>
+              Select an opportunity type
+            </option>
+            <option>Investment</option>
+            <option>Partnership</option>
+            <option>Market Entry</option>
+            <option>Sourcing</option>
           </select>
         </label>
 
@@ -252,8 +359,49 @@ function AddOpportunityForm({ onDone }) {
           Summary
           <textarea
             required
-            rows="5"
+            rows="3"
             placeholder="Enter a short opportunity summary"
+          />
+        </label>
+
+        <label>
+          Description
+          <textarea
+            required
+            rows="5"
+            placeholder="Describe the opportunity"
+          />
+        </label>
+
+        <label>
+          Why it matters
+          <textarea
+            required
+            rows="3"
+            placeholder="Explain why this opportunity matters"
+          />
+        </label>
+
+        <label>
+          Recommended action
+          <textarea
+            required
+            rows="3"
+            placeholder="Describe the recommended next action"
+          />
+        </label>
+
+        <label>
+          Source name
+          <input required placeholder="Enter the evidence source name" />
+        </label>
+
+        <label>
+          Source URL
+          <input
+            required
+            type="url"
+            placeholder="https://example.com/source"
           />
         </label>
 
@@ -307,18 +455,26 @@ function Shortlist({ shortlist, onView, onToggleShortlist }) {
   )
 }
 
+function NotFound() {
+  const navigate = useNavigate()
+
+  return (
+    <section className="empty-state">
+      <p className="eyebrow">Page not found</p>
+      <h2>The page you requested does not exist.</h2>
+      <button type="button" onClick={() => navigate('/opportunities')}>
+        Return to opportunities
+      </button>
+    </section>
+  )
+}
+
 function App() {
-  const [activePage, setActivePage] = useState('list')
-  const [selectedId, setSelectedId] = useState(1)
+  const navigate = useNavigate()
   const [shortlist, setShortlist] = useState([2])
 
-  const selectedOpportunity =
-    opportunities.find((opportunity) => opportunity.id === selectedId) ??
-    opportunities[0]
-
   function viewOpportunity(id) {
-    setSelectedId(id)
-    setActivePage('details')
+    navigate(`/opportunities/${id}`)
   }
 
   function toggleShortlist(id) {
@@ -332,43 +488,56 @@ function App() {
   return (
     <div className="app-shell">
       <Navigation
-        activePage={activePage}
         shortlistCount={shortlist.length}
-        onNavigate={setActivePage}
       />
 
       <main>
-        {activePage === 'list' && (
-          <OpportunityList
-            shortlist={shortlist}
-            onView={viewOpportunity}
-            onToggleShortlist={toggleShortlist}
+        <Routes>
+          <Route path="/" element={<Navigate to="/opportunities" replace />} />
+          <Route
+            path="/opportunities"
+            element={
+              <OpportunityList
+                shortlist={shortlist}
+                onView={viewOpportunity}
+                onToggleShortlist={toggleShortlist}
+              />
+            }
           />
-        )}
-
-        {activePage === 'details' && (
-          <OpportunityDetails
-            opportunity={selectedOpportunity}
-            isShortlisted={shortlist.includes(selectedOpportunity.id)}
-            onBack={() => setActivePage('list')}
-            onToggleShortlist={toggleShortlist}
+          <Route
+            path="/opportunities/new"
+            element={
+              <AddOpportunityForm
+                onDone={() => navigate('/opportunities')}
+              />
+            }
           />
-        )}
-
-        {activePage === 'add' && (
-          <AddOpportunityForm onDone={() => setActivePage('list')} />
-        )}
-
-        {activePage === 'shortlist' && (
-          <Shortlist
-            shortlist={shortlist}
-            onView={viewOpportunity}
-            onToggleShortlist={toggleShortlist}
+          <Route
+            path="/opportunities/:opportunityId"
+            element={
+              <OpportunityDetailsRoute
+                shortlist={shortlist}
+                onToggleShortlist={toggleShortlist}
+              />
+            }
           />
-        )}
+          <Route
+            path="/shortlist"
+            element={
+              <Shortlist
+                shortlist={shortlist}
+                onView={viewOpportunity}
+                onToggleShortlist={toggleShortlist}
+              />
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </main>
 
-      <footer>Issue #6 · Low-fidelity wireframe · Placeholder data only</footer>
+      <footer>
+        Issue #5 · React Router · Field contract aligned with Issues #2 and #8
+      </footer>
     </div>
   )
 }
