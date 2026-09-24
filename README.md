@@ -27,12 +27,29 @@ ${VITE_API_BASE_URL}/opportunities
 Each opportunity contains:
 
 - `id`
-- `createdAt`
 - `title`
 - `state`
 - `sector`
+- `opportunityType`
 - `summary`
-- `support`
-- `nextStep`
+- `description`
+- `whyItMatters`
+- `recommendedAction`
+- `sourceName`
+- `sourceUrl`
+- `isUserCreated`
+
+This field contract follows Issue #2. MockAPI generates `id`; records created
+through the application set `isUserCreated` to `true`. MockAPI may also return
+service metadata such as `createdAt`, but that metadata is not part of the
+application's required opportunity fields.
+
+The React routes configured for Issue #5 are:
+
+- `#/opportunities` — opportunity list
+- `#/opportunities/:opportunityId` — opportunity details
+- `#/opportunities/new` — add-opportunity form
+- `#/shortlist` — shortlist
+- any unknown route — Not Found fallback
 
 The demonstration data is fictional and intended only for application development and testing.
