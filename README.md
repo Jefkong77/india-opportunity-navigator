@@ -1,16 +1,38 @@
-# React + Vite
+# india-opportunity-navigator
+A React application for Singapore SMEs and market advisors exploring evidence-linked opportunities across Indian states and sectors.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
+## MockAPI configuration
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The project uses a MockAPI `opportunities` resource containing 12 curated demonstration records.
 
-## React Compiler
+### Local environment setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Copy `.env.example` and rename the copy to `.env.local`.
+2. Replace the placeholder project ID with the assigned MockAPI project ID.
+3. Do not commit `.env.local` or any credentials.
 
-## Expanding the ESLint configuration
+```env
+VITE_API_BASE_URL=https://your-project-id.mockapi.io/api/v1
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Opportunities resource
+
+The application can access the resource through:
+
+```text
+${VITE_API_BASE_URL}/opportunities
+```
+
+Each opportunity contains:
+
+- `id`
+- `createdAt`
+- `title`
+- `state`
+- `sector`
+- `summary`
+- `support`
+- `nextStep`
+
+The demonstration data is fictional and intended only for application development and testing.
