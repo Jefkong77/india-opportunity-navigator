@@ -254,7 +254,29 @@ textarea {
   gap: 20px;
   padding: 28px;
 }
+.form-feedback {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid;
+  font-weight: 700;
+}
 
+.form-feedback.success {
+  border-color: #2e7d32;
+  background: #edf7ed;
+  color: #1b5e20;
+}
+
+.form-feedback.error {
+  border-color: #c62828;
+  background: #fdecec;
+  color: #8e1b1b;
+}
+
+.form-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
 .empty-state {
   padding: 40px;
   text-align: center;
