@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Navigate,
   Route,
@@ -8,63 +8,6 @@ import {
   useParams,
 } from 'react-router-dom'
 import './App.css'
-
-const opportunities = [
-  {
-    id: 1,
-    title: 'Semiconductor Manufacturing Incentive',
-    state: 'Gujarat',
-    sector: 'Semiconductors',
-    opportunityType: 'Investment',
-    summary:
-      'Placeholder opportunity for companies exploring manufacturing and supply-chain partnerships.',
-    description:
-      'A fictional demonstration opportunity for establishing semiconductor manufacturing capacity in Gujarat.',
-    whyItMatters:
-      'It illustrates how the navigator can connect a sector opportunity with a specific Indian state.',
-    recommendedAction:
-      'Review the supporting evidence and contact the relevant state agency to confirm current eligibility.',
-    sourceName: 'Demonstration source',
-    sourceUrl: 'https://example.com',
-    isUserCreated: false,
-  },
-  {
-    id: 2,
-    title: 'Life Sciences Expansion Programme',
-    state: 'Telangana',
-    sector: 'Biotechnology',
-    opportunityType: 'Partnership',
-    summary:
-      'Placeholder opportunity for biotechnology, pharmaceutical and research companies.',
-    description:
-      'A fictional demonstration opportunity for research and commercial partnerships in Telangana.',
-    whyItMatters:
-      'It shows how sector strengths can be presented with a clear partnership pathway.',
-    recommendedAction:
-      'Assess potential partners and verify the programme details with the named source.',
-    sourceName: 'Demonstration source',
-    sourceUrl: 'https://example.com',
-    isUserCreated: false,
-  },
-  {
-    id: 3,
-    title: 'Digital Infrastructure Investment',
-    state: 'Maharashtra',
-    sector: 'Infrastructure',
-    opportunityType: 'Market Entry',
-    summary:
-      'Placeholder opportunity for data centres and digital infrastructure providers.',
-    description:
-      'A fictional demonstration opportunity for entering Maharashtra’s digital infrastructure market.',
-    whyItMatters:
-      'It demonstrates how market-entry opportunities can be compared alongside investment and partnership options.',
-    recommendedAction:
-      'Validate demand, location requirements and applicable incentives before proceeding.',
-    sourceName: 'Demonstration source',
-    sourceUrl: 'https://example.com',
-    isUserCreated: false,
-  },
-]
 
 function Navigation({ shortlistCount }) {
   const navigate = useNavigate()
@@ -185,6 +128,8 @@ function OpportunityCard({
 }
 
 function OpportunityList({
+  opportunities,
+  loadStatus,
   shortlist,
   onView,
   onToggleShortlist,
@@ -194,22 +139,35 @@ function OpportunityList({
       <section className="page-heading">
         <p className="eyebrow">Page 1 of 4</p>
         <h2>Opportunity List</h2>
-        <p>Browse placeholder opportunities by state and sector.</p>
+        <p>Browse MockAPI opportunities by state and sector.</p>
       </section>
 
       <FilterPanel />
 
-      <section className="card-grid">
-        {opportunities.map((opportunity) => (
-          <OpportunityCard
-            key={opportunity.id}
-            opportunity={opportunity}
-            isShortlisted={shortlist.includes(opportunity.id)}
-            onView={onView}
-            onToggleShortlist={onToggleShortlist}
-          />
-        ))}
-      </section>
+      {loadStatus === 'loading' && (
+        <p role="status">Loading opportunity records…</p>
+      )}
+
+      {loadStatus === 'error' && (
+        <p role="alert">
+          Unable to load opportunities. Check the MockAPI configuration and
+          try again.
+        </p>
+      )}
+
+      {loadStatus === 'success' && (
+        <section className="card-grid">
+          {opportunities.map((opportunity) => (
+            <OpportunityCard
+              key={opportunity.id}
+              opportunity={opportunity}
+              isShortlisted={shortlist.includes(String(opportunity.id))}
+              onView={onView}
+              onToggleShortlist={onToggleShortlist}
+            />
+          ))}
+        </section>
+      )}
     </>
   )
 }
@@ -274,12 +232,25 @@ function OpportunityDetails({
   )
 }
 
-function OpportunityDetailsRoute({ shortlist, onToggleShortlist }) {
+function OpportunityDetailsRoute({
+  opportunities,
+  loadStatus,
+  shortlist,
+  onToggleShortlist,
+}) {
   const navigate = useNavigate()
   const { opportunityId } = useParams()
   const opportunity = opportunities.find(
     (item) => String(item.id) === opportunityId,
   )
+
+  if (loadStatus === 'loading') {
+    return <p role="status">Loading opportunity details…</p>
+  }
+
+  if (loadStatus === 'error') {
+    return <p role="alert">Unable to load this opportunity.</p>
+  }
 
   if (!opportunity) {
     return <NotFound />
@@ -288,7 +259,7 @@ function OpportunityDetailsRoute({ shortlist, onToggleShortlist }) {
   return (
     <OpportunityDetails
       opportunity={opportunity}
-      isShortlisted={shortlist.includes(opportunity.id)}
+      isShortlisted={shortlist.includes(String(opportunity.id))}
       onBack={() => navigate('/opportunities')}
       onToggleShortlist={onToggleShortlist}
     />
@@ -420,9 +391,14 @@ function AddOpportunityForm({ onDone }) {
   )
 }
 
-function Shortlist({ shortlist, onView, onToggleShortlist }) {
+function Shortlist({
+  opportunities,
+  shortlist,
+  onView,
+  onToggleShortlist,
+}) {
   const shortlistedOpportunities = opportunities.filter((opportunity) =>
-    shortlist.includes(opportunity.id),
+    shortlist.includes(String(opportunity.id)),
   )
 
   return (
@@ -471,17 +447,61 @@ function NotFound() {
 
 function App() {
   const navigate = useNavigate()
-  const [shortlist, setShortlist] = useState([2])
+  const [opportunities, setOpportunities] = useState([])
+  const [loadStatus, setLoadStatus] = useState('loading')
+  const [shortlist, setShortlist] = useState([])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadOpportunities() {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '')
+
+      if (!apiBaseUrl) {
+        setLoadStatus('error')
+        return
+      }
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/opportunities`, {
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error(`MockAPI request failed with ${response.status}`)
+        }
+
+        const records = await response.json()
+
+        if (!Array.isArray(records)) {
+          throw new Error('MockAPI response must be an array')
+        }
+
+        setOpportunities(records)
+        setLoadStatus('success')
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setLoadStatus('error')
+        }
+      }
+    }
+
+    loadOpportunities()
+
+    return () => controller.abort()
+  }, [])
 
   function viewOpportunity(id) {
     navigate(`/opportunities/${id}`)
   }
 
   function toggleShortlist(id) {
+    const opportunityId = String(id)
+
     setShortlist((currentShortlist) =>
-      currentShortlist.includes(id)
-        ? currentShortlist.filter((itemId) => itemId !== id)
-        : [...currentShortlist, id],
+      currentShortlist.includes(opportunityId)
+        ? currentShortlist.filter((itemId) => itemId !== opportunityId)
+        : [...currentShortlist, opportunityId],
     )
   }
 
@@ -498,6 +518,8 @@ function App() {
             path="/opportunities"
             element={
               <OpportunityList
+                opportunities={opportunities}
+                loadStatus={loadStatus}
                 shortlist={shortlist}
                 onView={viewOpportunity}
                 onToggleShortlist={toggleShortlist}
@@ -516,6 +538,8 @@ function App() {
             path="/opportunities/:opportunityId"
             element={
               <OpportunityDetailsRoute
+                opportunities={opportunities}
+                loadStatus={loadStatus}
                 shortlist={shortlist}
                 onToggleShortlist={toggleShortlist}
               />
@@ -525,6 +549,7 @@ function App() {
             path="/shortlist"
             element={
               <Shortlist
+                opportunities={opportunities}
                 shortlist={shortlist}
                 onView={viewOpportunity}
                 onToggleShortlist={toggleShortlist}
@@ -536,7 +561,7 @@ function App() {
       </main>
 
       <footer>
-        Issue #5 · React Router · Field contract aligned with Issues #2 and #8
+        Issues #5 and #9 · React Router with MockAPI opportunity records
       </footer>
     </div>
   )
