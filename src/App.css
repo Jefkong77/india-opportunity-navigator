@@ -306,3 +306,28 @@ footer {
     padding: 28px 0;
   }
 }
+.delete-panel {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #b8b8b8;
+}
+
+.delete-panel > p {
+  margin: 0 0 0.75rem;
+}
+
+.danger-button {
+  color: #ffffff;
+  background: #9f1d1d;
+  border-color: #9f1d1d;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #761616;
+  border-color: #761616;
+}
+
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
