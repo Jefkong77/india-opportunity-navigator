@@ -286,7 +286,15 @@ function OpportunityDetails({
         </div>
 
         <h3>{opportunity.title}</h3>
+        <h4>Record ID</h4>
+        <p>{opportunity.id}</p>
 
+        <h4>Record origin</h4>
+        <p>
+        {opportunity.isUserCreated
+        ? 'User-created opportunity'
+        : 'Curated demonstration record'}
+        </p>
         <h4>Opportunity summary</h4>
         <p>{opportunity.summary}</p>
 
@@ -321,6 +329,20 @@ function OpportunityDetails({
   )
 }
 
+function OpportunityNotFound({ onBack }) {
+  return (
+    <section className="empty-state">
+      <p className="eyebrow">Opportunity not found</p>
+      <h2>We could not find this opportunity.</h2>
+      <p>The opportunity ID may be missing or invalid.</p>
+
+      <button type="button" onClick={onBack}>
+        Return to opportunities
+      </button>
+    </section>
+  )
+}
+
 function OpportunityDetailsRoute({
   opportunities,
   loadStatus,
@@ -342,9 +364,12 @@ function OpportunityDetailsRoute({
   }
 
   if (!opportunity) {
-    return <NotFound />
+  return (
+    <OpportunityNotFound
+      onBack={() => navigate('/opportunities')}
+    />
+  )
   }
-
   return (
     <OpportunityDetails
       opportunity={opportunity}
