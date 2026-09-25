@@ -380,10 +380,145 @@ function OpportunityDetailsRoute({
   )
 }
 
-function AddOpportunityForm({ onDone }) {
-  function handleSubmit(event) {
+const INITIAL_OPPORTUNITY_FORM = {
+  title: '',
+  state: '',
+  sector: '',
+  opportunityType: '',
+  summary: '',
+  description: '',
+  whyItMatters: '',
+  recommendedAction: '',
+  sourceName: '',
+  sourceUrl: '',
+}
+
+function AddOpportunityForm({ onCancel, onCreated }) {
+  const [formValues, setFormValues] = useState(INITIAL_OPPORTUNITY_FORM)
+  const [submitStatus, setSubmitStatus] = useState('idle')
+  const [feedback, setFeedback] = useState({
+    type: '',
+    message: '',
+  })
+
+  const isBusy =
+    submitStatus === 'submitting' || submitStatus === 'success'
+
+  function handleChange(event) {
+    const { name, value } = event.target
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [name]: value,
+    }))
+
+    if (feedback.message) {
+      setFeedback({
+        type: '',
+        message: '',
+      })
+    }
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault()
-    onDone()
+
+    const submittedValues = Object.fromEntries(
+      Object.entries(formValues).map(([field, value]) => [
+        field,
+        value.trim(),
+      ]),
+    )
+
+    const hasEmptyRequiredField = Object.values(submittedValues).some(
+      (value) => !value,
+    )
+
+    if (hasEmptyRequiredField) {
+      setSubmitStatus('error')
+      setFeedback({
+        type: 'error',
+        message: 'Please complete every required field before submitting.',
+      })
+      return
+    }
+
+    let validatedSourceUrl
+
+    try {
+      validatedSourceUrl = new URL(submittedValues.sourceUrl)
+
+      if (!['http:', 'https:'].includes(validatedSourceUrl.protocol)) {
+        throw new Error('Unsupported URL protocol')
+      }
+    } catch {
+      setSubmitStatus('error')
+      setFeedback({
+        type: 'error',
+        message:
+          'Enter a valid source URL beginning with http:// or https://.',
+      })
+      return
+    }
+
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '')
+
+    if (!apiBaseUrl) {
+      setSubmitStatus('error')
+      setFeedback({
+        type: 'error',
+        message:
+          'The MockAPI base URL is unavailable. Check the local environment configuration.',
+      })
+      return
+    }
+
+    const newOpportunity = {
+      ...submittedValues,
+      sourceUrl: validatedSourceUrl.toString(),
+      isUserCreated: true,
+    }
+
+    setSubmitStatus('submitting')
+    setFeedback({
+      type: '',
+      message: '',
+    })
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/opportunities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newOpportunity),
+      })
+
+      if (!response.ok) {
+        throw new Error(`MockAPI request failed with ${response.status}`)
+      }
+
+      const createdOpportunity = await response.json()
+
+      setFormValues(INITIAL_OPPORTUNITY_FORM)
+      setSubmitStatus('success')
+      setFeedback({
+        type: 'success',
+        message:
+          'Opportunity created successfully. Returning to the opportunity list.',
+      })
+
+      window.setTimeout(() => {
+        onCreated(createdOpportunity)
+      }, 1200)
+    } catch {
+      setSubmitStatus('error')
+      setFeedback({
+        type: 'error',
+        message:
+          'The opportunity could not be saved. Please check the connection and try again.',
+      })
+    }
   }
 
   return (
@@ -391,58 +526,82 @@ function AddOpportunityForm({ onDone }) {
       <div className="page-heading">
         <p className="eyebrow">Page 3 of 4</p>
         <h2>Add Opportunity</h2>
-        <p>Enter placeholder information for a new opportunity.</p>
+        <p>
+          Create a new evidence-linked opportunity for the shared catalogue.
+        </p>
       </div>
 
-      <form className="opportunity-form" onSubmit={handleSubmit}>
+      <form
+        className="opportunity-form"
+        onSubmit={handleSubmit}
+        noValidate
+      >
         <label>
           Opportunity title
-          <input required placeholder="Enter opportunity title" />
+          <input
+            name="title"
+            value={formValues.title}
+            onChange={handleChange}
+            required
+            placeholder="Enter opportunity title"
+          />
         </label>
 
         <label>
           State
-          <select required defaultValue="">
-            <option value="" disabled>
-              Select a state
-            </option>
-            <option>Gujarat</option>
-            <option>Karnataka</option>
-            <option>Maharashtra</option>
-            <option>Tamil Nadu</option>
-            <option>Telangana</option>
+          <select
+            name="state"
+            value={formValues.state}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select a state</option>
+            <option value="Gujarat">Gujarat</option>
+            <option value="Karnataka">Karnataka</option>
+            <option value="Maharashtra">Maharashtra</option>
+            <option value="Tamil Nadu">Tamil Nadu</option>
+            <option value="Telangana">Telangana</option>
           </select>
         </label>
 
         <label>
           Sector
-          <select required defaultValue="">
-            <option value="" disabled>
-              Select a sector
-            </option>
-            <option>Semiconductors</option>
-            <option>Electronics</option>
-            <option>Biotechnology</option>
-            <option>Infrastructure</option>
+          <select
+            name="sector"
+            value={formValues.sector}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select a sector</option>
+            <option value="Semiconductors">Semiconductors</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Biotechnology">Biotechnology</option>
+            <option value="Infrastructure">Infrastructure</option>
           </select>
         </label>
 
         <label>
           Opportunity type
-          <select required defaultValue="">
-            <option value="" disabled>
-              Select an opportunity type
-            </option>
-            <option>Investment</option>
-            <option>Partnership</option>
-            <option>Market Entry</option>
-            <option>Sourcing</option>
+          <select
+            name="opportunityType"
+            value={formValues.opportunityType}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select an opportunity type</option>
+            <option value="Investment">Investment</option>
+            <option value="Partnership">Partnership</option>
+            <option value="Market Entry">Market Entry</option>
+            <option value="Sourcing">Sourcing</option>
           </select>
         </label>
 
         <label>
           Summary
           <textarea
+            name="summary"
+            value={formValues.summary}
+            onChange={handleChange}
             required
             rows="3"
             placeholder="Enter a short opportunity summary"
@@ -452,6 +611,9 @@ function AddOpportunityForm({ onDone }) {
         <label>
           Description
           <textarea
+            name="description"
+            value={formValues.description}
+            onChange={handleChange}
             required
             rows="5"
             placeholder="Describe the opportunity"
@@ -461,6 +623,9 @@ function AddOpportunityForm({ onDone }) {
         <label>
           Why it matters
           <textarea
+            name="whyItMatters"
+            value={formValues.whyItMatters}
+            onChange={handleChange}
             required
             rows="3"
             placeholder="Explain why this opportunity matters"
@@ -470,6 +635,9 @@ function AddOpportunityForm({ onDone }) {
         <label>
           Recommended action
           <textarea
+            name="recommendedAction"
+            value={formValues.recommendedAction}
+            onChange={handleChange}
             required
             rows="3"
             placeholder="Describe the recommended next action"
@@ -478,24 +646,50 @@ function AddOpportunityForm({ onDone }) {
 
         <label>
           Source name
-          <input required placeholder="Enter the evidence source name" />
+          <input
+            name="sourceName"
+            value={formValues.sourceName}
+            onChange={handleChange}
+            required
+            placeholder="Enter the evidence source name"
+          />
         </label>
 
         <label>
           Source URL
           <input
+            name="sourceUrl"
+            value={formValues.sourceUrl}
+            onChange={handleChange}
             required
             type="url"
             placeholder="https://example.com/source"
           />
         </label>
 
+        {feedback.message && (
+          <p
+            className={`form-feedback ${feedback.type}`}
+            role={feedback.type === 'error' ? 'alert' : 'status'}
+          >
+            {feedback.message}
+          </p>
+        )}
+
         <div className="form-actions">
-          <button type="submit">Save placeholder</button>
+          <button type="submit" disabled={isBusy}>
+            {submitStatus === 'submitting'
+              ? 'Saving opportunity...'
+              : submitStatus === 'success'
+                ? 'Opportunity saved'
+                : 'Create opportunity'}
+          </button>
+
           <button
             type="button"
             className="secondary-button"
-            onClick={onDone}
+            onClick={onCancel}
+            disabled={isBusy}
           >
             Cancel
           </button>
@@ -644,8 +838,15 @@ function App() {
             path="/opportunities/new"
             element={
               <AddOpportunityForm
-                onDone={() => navigate('/opportunities')}
-              />
+              onCancel={() => navigate('/opportunities')}
+              onCreated={(createdOpportunity) => {
+              setOpportunities((currentOpportunities) => [
+               ...currentOpportunities,
+                createdOpportunity,
+               ])
+              navigate('/opportunities')
+            }}
+          />
             }
           />
           <Route
