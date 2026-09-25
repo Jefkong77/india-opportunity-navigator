@@ -266,6 +266,9 @@ function OpportunityDetails({
   isShortlisted,
   onBack,
   onToggleShortlist,
+  onDelete,
+  deleteStatus,
+  deleteError,
 }) {
   return (
     <section>
@@ -324,6 +327,31 @@ function OpportunityDetails({
         >
           {isShortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
         </button>
+                {opportunity.isUserCreated === true && (
+          <div className="delete-panel">
+            <p>
+              This opportunity was created by a user and can be permanently
+              deleted.
+            </p>
+
+            <button
+              type="button"
+              className="danger-button"
+              onClick={onDelete}
+              disabled={deleteStatus === 'deleting'}
+            >
+              {deleteStatus === 'deleting'
+                ? 'Deleting...'
+                : 'Delete opportunity'}
+            </button>
+
+            {deleteError && (
+              <p className="form-feedback error" role="alert">
+                {deleteError}
+              </p>
+            )}
+          </div>
+        )}
       </article>
     </section>
   )
@@ -348,13 +376,43 @@ function OpportunityDetailsRoute({
   loadStatus,
   shortlist,
   onToggleShortlist,
+  onDeleteOpportunity,
 }) {
   const navigate = useNavigate()
   const { opportunityId } = useParams()
+  const [deleteStatus, setDeleteStatus] = useState('idle')
+  const [deleteError, setDeleteError] = useState('')
   const opportunity = opportunities.find(
     (item) => String(item.id) === opportunityId,
   )
+  async function handleDelete() {
+    if (!opportunity || opportunity.isUserCreated !== true) {
+      return
+    }
 
+    const confirmed = window.confirm(
+      `Delete "${opportunity.title}"? This action cannot be undone.`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setDeleteStatus('deleting')
+    setDeleteError('')
+
+    try {
+      await onDeleteOpportunity(opportunity.id)
+      navigate('/opportunities')
+    } catch (error) {
+      setDeleteStatus('error')
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to delete this opportunity.',
+      )
+    }
+  }
   if (loadStatus === 'loading') {
     return <p role="status">Loading opportunity details…</p>
   }
@@ -376,6 +434,9 @@ function OpportunityDetailsRoute({
       isShortlisted={shortlist.includes(String(opportunity.id))}
       onBack={() => navigate('/opportunities')}
       onToggleShortlist={onToggleShortlist}
+      onDelete={handleDelete}
+      deleteStatus={deleteStatus}
+      deleteError={deleteError}
     />
   )
 }
@@ -812,7 +873,43 @@ function App() {
         : [...currentShortlist, opportunityId],
     )
   }
+    async function deleteOpportunity(opportunityId) {
+    const opportunityIdText = String(opportunityId)
+    const opportunity = opportunities.find(
+      (item) => String(item.id) === opportunityIdText,
+    )
 
+    if (!opportunity || opportunity.isUserCreated !== true) {
+      throw new Error('Only user-created opportunities can be deleted.')
+    }
+
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '')
+
+    if (!apiBaseUrl) {
+      throw new Error('The MockAPI base URL is not configured.')
+    }
+
+    const response = await fetch(
+      `${apiBaseUrl}/opportunities/${opportunityIdText}`,
+      {
+        method: 'DELETE',
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error(`MockAPI deletion failed with ${response.status}`)
+    }
+
+    setOpportunities((currentOpportunities) =>
+      currentOpportunities.filter(
+        (item) => String(item.id) !== opportunityIdText,
+      ),
+    )
+
+    setShortlist((currentShortlist) =>
+      currentShortlist.filter((itemId) => itemId !== opportunityIdText),
+    )
+  }
   return (
     <div className="app-shell">
       <Navigation
@@ -857,6 +954,7 @@ function App() {
                 loadStatus={loadStatus}
                 shortlist={shortlist}
                 onToggleShortlist={toggleShortlist}
+                onDeleteOpportunity={deleteOpportunity}
               />
             }
           />
