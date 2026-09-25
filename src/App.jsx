@@ -650,7 +650,7 @@ function App() {
       </main>
 
       <footer>
-        Issues #5 and #9 · React Router with MockAPI opportunity records
+        India Opportunity Navigator · MockAPI-powered opportunity catalogue
       </footer>
     </div>
   )
