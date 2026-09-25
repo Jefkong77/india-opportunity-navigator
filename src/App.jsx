@@ -60,34 +60,65 @@ function Navigation({ shortlistCount }) {
   )
 }
 
-function FilterPanel() {
+function FilterPanel({
+  searchTerm,
+  selectedState,
+  selectedSector,
+  states,
+  sectors,
+  onSearchChange,
+  onStateChange,
+  onSectorChange,
+  onClearFilters,
+}) {
   return (
     <section className="filter-panel" aria-label="Opportunity filters">
+      <label className="search-filter">
+        Search
+        <input
+          type="search"
+          value={searchTerm}
+          placeholder="Search opportunities"
+          onChange={(event) => onSearchChange(event.target.value)}
+        />
+      </label>
+
       <label>
         State
-        <select defaultValue="">
+        <select
+          value={selectedState}
+          onChange={(event) => onStateChange(event.target.value)}
+        >
           <option value="">All states</option>
-          <option>Gujarat</option>
-          <option>Karnataka</option>
-          <option>Maharashtra</option>
-          <option>Tamil Nadu</option>
-          <option>Telangana</option>
+          {states.map((state) => (
+            <option key={state} value={state}>
+              {state}
+            </option>
+          ))}
         </select>
       </label>
 
       <label>
         Sector
-        <select defaultValue="">
+        <select
+          value={selectedSector}
+          onChange={(event) => onSectorChange(event.target.value)}
+        >
           <option value="">All sectors</option>
-          <option>Semiconductors</option>
-          <option>Electronics</option>
-          <option>Biotechnology</option>
-          <option>Infrastructure</option>
+          {sectors.map((sector) => (
+            <option key={sector} value={sector}>
+              {sector}
+            </option>
+          ))}
         </select>
       </label>
 
-      <button type="button" className="secondary-button">
-        Apply filters
+      <button
+        type="button"
+        className="secondary-button"
+        onClick={onClearFilters}
+      >
+        Clear filters
       </button>
     </section>
   )
@@ -134,6 +165,49 @@ function OpportunityList({
   onView,
   onToggleShortlist,
 }) {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedState, setSelectedState] = useState('')
+  const [selectedSector, setSelectedSector] = useState('')
+  const states = [
+    ...new Set(opportunities.map((opportunity) => opportunity.state)),
+  ]
+    .filter(Boolean)
+    .sort()
+  const sectors = [
+    ...new Set(opportunities.map((opportunity) => opportunity.sector)),
+  ]
+    .filter(Boolean)
+    .sort()
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+  const filteredOpportunities = opportunities.filter((opportunity) => {
+    const searchableValues = [
+      opportunity.title,
+      opportunity.summary,
+      opportunity.state,
+      opportunity.sector,
+      opportunity.opportunityType,
+    ]
+    const matchesSearch =
+      normalizedSearchTerm === '' ||
+      searchableValues.some((value) =>
+        String(value ?? '')
+          .toLowerCase()
+          .includes(normalizedSearchTerm),
+      )
+    const matchesState =
+      selectedState === '' || opportunity.state === selectedState
+    const matchesSector =
+      selectedSector === '' || opportunity.sector === selectedSector
+
+    return matchesSearch && matchesState && matchesSector
+  })
+
+  function clearFilters() {
+    setSearchTerm('')
+    setSelectedState('')
+    setSelectedSector('')
+  }
+
   return (
     <>
       <section className="page-heading">
@@ -142,7 +216,17 @@ function OpportunityList({
         <p>Browse MockAPI opportunities by state and sector.</p>
       </section>
 
-      <FilterPanel />
+      <FilterPanel
+        searchTerm={searchTerm}
+        selectedState={selectedState}
+        selectedSector={selectedSector}
+        states={states}
+        sectors={sectors}
+        onSearchChange={setSearchTerm}
+        onStateChange={setSelectedState}
+        onSectorChange={setSelectedSector}
+        onClearFilters={clearFilters}
+      />
 
       {loadStatus === 'loading' && (
         <p role="status">Loading opportunity records…</p>
@@ -155,23 +239,28 @@ function OpportunityList({
         </p>
       )}
 
-      {loadStatus === 'success' && (
-        <section className="card-grid">
-          {opportunities.map((opportunity) => (
-            <OpportunityCard
-              key={opportunity.id}
-              opportunity={opportunity}
-              isShortlisted={shortlist.includes(String(opportunity.id))}
-              onView={onView}
-              onToggleShortlist={onToggleShortlist}
-            />
-          ))}
-        </section>
-      )}
+      {loadStatus === 'success' &&
+        (filteredOpportunities.length === 0 ? (
+          <section className="empty-state">
+            <h3>No matching opportunities</h3>
+            <p>Try a different search term or clear the filters.</p>
+          </section>
+        ) : (
+          <section className="card-grid">
+            {filteredOpportunities.map((opportunity) => (
+              <OpportunityCard
+                key={opportunity.id}
+                opportunity={opportunity}
+                isShortlisted={shortlist.includes(String(opportunity.id))}
+                onView={onView}
+                onToggleShortlist={onToggleShortlist}
+              />
+            ))}
+          </section>
+        ))}
     </>
   )
 }
-
 function OpportunityDetails({
   opportunity,
   isShortlisted,
@@ -561,7 +650,7 @@ function App() {
       </main>
 
       <footer>
-        Issues #5 and #9 · React Router with MockAPI opportunity records
+        India Opportunity Navigator · MockAPI-powered opportunity catalogue
       </footer>
     </div>
   )
