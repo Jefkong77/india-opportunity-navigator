@@ -186,6 +186,7 @@ function OpportunityList({
   shortlist,
   onView,
   onToggleShortlist,
+  onRetry,
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedState, setSelectedState] = useState('')
@@ -201,6 +202,10 @@ function OpportunityList({
     .filter(Boolean)
     .sort()
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+    const hasActiveFilters =
+    normalizedSearchTerm !== '' ||
+    selectedState !== '' ||
+    selectedSector !== ''
   const filteredOpportunities = opportunities.filter((opportunity) => {
     const searchableValues = [
       opportunity.title,
@@ -250,19 +255,35 @@ function OpportunityList({
         onClearFilters={clearFilters}
       />
 
-      {loadStatus === 'loading' && (
-        <p role="status">Loading opportunity records…</p>
+            {loadStatus === 'loading' && (
+        <section className="empty-state" role="status">
+          <h3>Loading opportunities</h3>
+          <p>Fetching the latest opportunity records…</p>
+        </section>
       )}
 
-      {loadStatus === 'error' && (
-        <p role="alert">
-          Unable to load opportunities. Check the MockAPI configuration and
-          try again.
-        </p>
+            {loadStatus === 'error' && (
+        <section className="empty-state" role="alert">
+          <h3>Unable to load opportunities</h3>
+          <p>
+            Check your connection and MockAPI configuration, then try again.
+          </p>
+          <button type="button" onClick={onRetry}>
+            Try again
+          </button>
+        </section>
       )}
 
       {loadStatus === 'success' &&
-        (filteredOpportunities.length === 0 ? (
+        (opportunities.length === 0 ? (
+          <section className="empty-state">
+            <h3>No opportunities available</h3>
+            <p>
+              The catalogue is currently empty. Add an opportunity to get
+              started.
+            </p>
+          </section>
+        ) : filteredOpportunities.length === 0 && hasActiveFilters ? (
           <section className="empty-state">
             <h3>No matching opportunities</h3>
             <p>Try a different search term or clear the filters.</p>
@@ -399,6 +420,7 @@ function OpportunityDetailsRoute({
   shortlist,
   onToggleShortlist,
   onDeleteOpportunity,
+  onRetry,
 }) {
   const navigate = useNavigate()
   const { opportunityId } = useParams()
@@ -435,14 +457,37 @@ function OpportunityDetailsRoute({
       )
     }
   }
-  if (loadStatus === 'loading') {
-    return <p role="status">Loading opportunity details…</p>
-  }
 
+    if (loadStatus === 'loading') {
+    return (
+      <section className="empty-state" role="status">
+        <h2>Loading opportunity details</h2>
+        <p>Fetching the latest opportunity record…</p>
+      </section>
+    )
+  }
   if (loadStatus === 'error') {
-    return <p role="alert">Unable to load this opportunity.</p>
+    return (
+      <section className="empty-state" role="alert">
+        <h2>Unable to load this opportunity</h2>
+        <p>
+          Check your connection and MockAPI configuration, then try again.
+        </p>
+        <div className="form-actions">
+          <button type="button" onClick={onRetry}>
+            Try again
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => navigate('/opportunities')}
+          >
+            Return to opportunities
+          </button>
+        </div>
+      </section>
+    )
   }
-
   if (!opportunity) {
   return (
     <OpportunityNotFound
@@ -840,6 +885,7 @@ function App() {
   const navigate = useNavigate()
   const [opportunities, setOpportunities] = useState([])
   const [loadStatus, setLoadStatus] = useState('loading')
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [shortlist, setShortlist] = useState(loadStoredShortlist)
   useEffect(() => {
       try {
@@ -889,8 +935,11 @@ function App() {
     loadOpportunities()
 
     return () => controller.abort()
-  }, [])
-
+  }, [loadAttempt])
+  function retryLoadOpportunities() {
+    setLoadStatus('loading')
+    setLoadAttempt((currentAttempt) => currentAttempt + 1)
+  }
   function viewOpportunity(id) {
     navigate(`/opportunities/${id}`)
   }
@@ -959,6 +1008,7 @@ function App() {
                 shortlist={shortlist}
                 onView={viewOpportunity}
                 onToggleShortlist={toggleShortlist}
+                onRetry={retryLoadOpportunities}
               />
             }
           />
@@ -986,6 +1036,7 @@ function App() {
                 shortlist={shortlist}
                 onToggleShortlist={toggleShortlist}
                 onDeleteOpportunity={deleteOpportunity}
+                onRetry={retryLoadOpportunities}
               />
             }
           />
