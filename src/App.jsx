@@ -8,7 +8,29 @@ import {
   useParams,
 } from 'react-router-dom'
 import './App.css'
+const SHORTLIST_STORAGE_KEY = 'india-opportunity-navigator-shortlist'
 
+function loadStoredShortlist() {
+  try {
+    const storedShortlist = window.localStorage.getItem(
+      SHORTLIST_STORAGE_KEY,
+    )
+
+    if (!storedShortlist) {
+      return []
+    }
+
+    const parsedShortlist = JSON.parse(storedShortlist)
+
+    if (!Array.isArray(parsedShortlist)) {
+      return []
+    }
+
+    return [...new Set(parsedShortlist.map(String))]
+  } catch {
+    return []
+  }
+}
 function Navigation({ shortlistCount }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -818,8 +840,17 @@ function App() {
   const navigate = useNavigate()
   const [opportunities, setOpportunities] = useState([])
   const [loadStatus, setLoadStatus] = useState('loading')
-  const [shortlist, setShortlist] = useState([])
-
+  const [shortlist, setShortlist] = useState(loadStoredShortlist)
+  useEffect(() => {
+      try {
+     window.localStorage.setItem(
+      SHORTLIST_STORAGE_KEY,
+      JSON.stringify(shortlist),
+      )
+     } catch {
+      // Keep the shortlist available in React state if storage is unavailable.
+     }
+      }, [shortlist])
   useEffect(() => {
     const controller = new AbortController()
 
