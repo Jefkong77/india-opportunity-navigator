@@ -814,11 +814,42 @@ function NotFound() {
   )
 }
 
+const SHORTLIST_STORAGE_KEY = 'india-opportunity-navigator-shortlist'
+
+function loadStoredShortlist() {
+  try {
+    const storedShortlist = window.localStorage.getItem(SHORTLIST_STORAGE_KEY)
+
+    if (!storedShortlist) {
+      return []
+    }
+
+    const parsedShortlist = JSON.parse(storedShortlist)
+
+    if (!Array.isArray(parsedShortlist)) {
+      return []
+    }
+
+    return [
+      ...new Set(
+        parsedShortlist
+          .filter(
+            (id) => typeof id === 'string' || typeof id === 'number',
+          )
+          .map((id) => String(id).trim())
+          .filter(Boolean),
+      ),
+    ]
+  } catch {
+    return []
+  }
+}
+
 function App() {
   const navigate = useNavigate()
   const [opportunities, setOpportunities] = useState([])
   const [loadStatus, setLoadStatus] = useState('loading')
-  const [shortlist, setShortlist] = useState([])
+  const [shortlist, setShortlist] = useState(loadStoredShortlist)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -859,6 +890,17 @@ function App() {
 
     return () => controller.abort()
   }, [])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        SHORTLIST_STORAGE_KEY,
+        JSON.stringify(shortlist),
+      )
+    } catch {
+      // Keep shortlist interactions working if browser storage is unavailable.
+    }
+  }, [shortlist])
 
   function viewOpportunity(id) {
     navigate(`/opportunities/${id}`)
