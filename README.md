@@ -2,6 +2,10 @@
 A React application for Singapore SMEs and market advisors exploring evidence-linked opportunities across Indian states and sectors.
 
 
+## Live application
+
+Deployed on Netlify: https://sctp-india-navigator.netlify.app
+
 ## MockAPI configuration
 
 The project uses a MockAPI `opportunities` resource containing 12 curated demonstration records.
