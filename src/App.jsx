@@ -832,17 +832,65 @@ function Shortlist({
   shortlist,
   onView,
   onToggleShortlist,
+  onReorderShortlist,
 }) {
-  const shortlistedOpportunities = opportunities.filter((opportunity) =>
-    shortlist.includes(String(opportunity.id)),
+  const [draggedOpportunityId, setDraggedOpportunityId] = useState('')
+
+  const opportunitiesById = new Map(
+    opportunities.map((opportunity) => [
+      String(opportunity.id),
+      opportunity,
+    ]),
   )
+
+  const shortlistedOpportunities = shortlist
+    .map((opportunityId) =>
+      opportunitiesById.get(String(opportunityId)),
+    )
+    .filter(Boolean)
+
+  function handleDragStart(event, opportunityId) {
+    const opportunityIdText = String(opportunityId)
+
+    setDraggedOpportunityId(opportunityIdText)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', opportunityIdText)
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  function handleDrop(event, targetOpportunityId) {
+    event.preventDefault()
+
+    const sourceOpportunityId =
+      event.dataTransfer.getData('text/plain') ||
+      draggedOpportunityId
+    const targetOpportunityIdText = String(targetOpportunityId)
+
+    if (
+      sourceOpportunityId &&
+      sourceOpportunityId !== targetOpportunityIdText
+    ) {
+      onReorderShortlist(
+        sourceOpportunityId,
+        targetOpportunityIdText,
+      )
+    }
+
+    setDraggedOpportunityId('')
+  }
 
   return (
     <section>
       <div className="page-heading">
         <p className="eyebrow">Page 4 of 4</p>
         <h2>Shortlist</h2>
-        <p>Review opportunities saved for follow-up.</p>
+        <p>
+          Review saved opportunities and drag the cards to reorder them.
+        </p>
       </div>
 
       {shortlistedOpportunities.length === 0 ? (
@@ -853,20 +901,40 @@ function Shortlist({
       ) : (
         <div className="card-grid">
           {shortlistedOpportunities.map((opportunity) => (
-            <OpportunityCard
+            <div
               key={opportunity.id}
-              opportunity={opportunity}
-              isShortlisted
-              onView={onView}
-              onToggleShortlist={onToggleShortlist}
-            />
+              className={
+                draggedOpportunityId === String(opportunity.id)
+                  ? 'shortlist-drag-item dragging'
+                  : 'shortlist-drag-item'
+              }
+              draggable
+              onDragStart={(event) =>
+                handleDragStart(event, opportunity.id)
+              }
+              onDragOver={handleDragOver}
+              onDrop={(event) =>
+                handleDrop(event, opportunity.id)
+              }
+              onDragEnd={() => setDraggedOpportunityId('')}
+            >
+              <p className="drag-instruction">
+                ↕ Drag to reorder
+              </p>
+
+              <OpportunityCard
+                opportunity={opportunity}
+                isShortlisted
+                onView={onView}
+                onToggleShortlist={onToggleShortlist}
+              />
+            </div>
           ))}
         </div>
       )}
     </section>
   )
 }
-
 function NotFound() {
   const navigate = useNavigate()
 
@@ -952,6 +1020,41 @@ function App() {
         ? currentShortlist.filter((itemId) => itemId !== opportunityId)
         : [...currentShortlist, opportunityId],
     )
+  }
+    function reorderShortlist(
+    sourceOpportunityId,
+    targetOpportunityId,
+  ) {
+    setShortlist((currentShortlist) => {
+      const sourceIndex = currentShortlist.indexOf(
+        String(sourceOpportunityId),
+      )
+      const targetIndex = currentShortlist.indexOf(
+        String(targetOpportunityId),
+      )
+
+      if (
+        sourceIndex === -1 ||
+        targetIndex === -1 ||
+        sourceIndex === targetIndex
+      ) {
+        return currentShortlist
+      }
+
+      const reorderedShortlist = [...currentShortlist]
+      const [movedOpportunityId] = reorderedShortlist.splice(
+        sourceIndex,
+        1,
+      )
+
+      reorderedShortlist.splice(
+        targetIndex,
+        0,
+        movedOpportunityId,
+      )
+
+      return reorderedShortlist
+    })
   }
     async function deleteOpportunity(opportunityId) {
     const opportunityIdText = String(opportunityId)
@@ -1048,6 +1151,7 @@ function App() {
                 shortlist={shortlist}
                 onView={viewOpportunity}
                 onToggleShortlist={toggleShortlist}
+                onReorderShortlist={reorderShortlist}
               />
             }
           />
