@@ -331,3 +331,32 @@ footer {
   cursor: not-allowed;
   opacity: 0.65;
 }
+.shortlist-drag-item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  cursor: grab;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.shortlist-drag-item:active {
+  cursor: grabbing;
+}
+
+.shortlist-drag-item.dragging {
+  opacity: 0.55;
+  transform: scale(0.98);
+}
+
+.shortlist-drag-item .opportunity-card {
+  flex: 1;
+}
+
+.drag-instruction {
+  margin: 0 0 8px;
+  color: #555;
+  font-size: 14px;
+  font-weight: bold;
+}
